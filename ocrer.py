@@ -16,10 +16,10 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
 
-# Set Tesseract path if it isn't just tesseract on your system (update this if needed)
+# Set Tesseract path if it isn't just tesseract on your system (update this if needed) #TODO: take optional argument for this
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Folder to watch
+# Folder to watch  #TODO: take optional argument for this
 WATCH_FOLDER = r'ocr-me'
 
 class OCRRenameHandler(FileSystemEventHandler):
@@ -39,7 +39,7 @@ class OCRRenameHandler(FileSystemEventHandler):
                 print(f"No text found in {file_path}, skipping rename.")
                 return
             
-            safe_text = "_".join(extracted_text.split()[:5])  # Use first 5 words for filename
+            safe_text = "_".join(extracted_text.split()[:5])  # Use first 5 words for filename #TODO: use the actual good fixes and guidelines I have.
             new_file_path = os.path.join(os.path.dirname(file_path), f"{safe_text}.png")
             
             os.rename(file_path, new_file_path)
