@@ -19,21 +19,9 @@ from PIL import Image
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="OCR file renamer")
-    parser.add_argument(
-        "--tesseract-path",
-        type=str,
-        help="Path to the Tesseract executable (if not in PATH)",
-    )
-    parser.add_argument(
-        "--watch-folder",
-        type=str,
-        default="ocr-me",
-        help="Folder to watch for new images (default: 'ocr-me')",
-    )
+    parser.add_argument("--tesseract-path", type=str, help="Path to the Tesseract executable (defaults to just calling `tesseract` on your system, so if that's in your PATH you're probably fine.)")
+    parser.add_argument("--watch-folder", type=str, default="ocr-me", help="Folder to watch for new images (default: 'ocr-me' in this folder)")
     return parser.parse_args()
-
-# Folder to watch  #TODO: take optional argument for this
-WATCH_FOLDER = r'ocr-me'
 
 class OCRRenameHandler(FileSystemEventHandler):
     def on_created(self, event):
