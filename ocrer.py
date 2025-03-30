@@ -12,12 +12,25 @@
 import os
 import time
 import pytesseract
+import argparse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
 
-# Set Tesseract path if it isn't just tesseract on your system (update this if needed) #TODO: take optional argument for this
-#pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="OCR file renamer")
+    parser.add_argument(
+        "--tesseract-path",
+        type=str,
+        help="Path to the Tesseract executable (if not in PATH)",
+    )
+    parser.add_argument(
+        "--watch-folder",
+        type=str,
+        default="ocr-me",
+        help="Folder to watch for new images (default: 'ocr-me')",
+    )
+    return parser.parse_args()
 
 # Folder to watch  #TODO: take optional argument for this
 WATCH_FOLDER = r'ocr-me'
@@ -48,6 +61,13 @@ class OCRRenameHandler(FileSystemEventHandler):
             print(f"Error processing {file_path}: {e}")
 
 if __name__ == "__main__":
+    args = parse_arguments()
+
+    if args.tesseract_path:
+        pytesseract.pytesseract.tesseract_cmd = args.tesseract_path
+
+    WATCH_FOLDER = args.watch_folder
+
     event_handler = OCRRenameHandler()
     observer = Observer()
     observer.schedule(event_handler, WATCH_FOLDER, recursive=False)
