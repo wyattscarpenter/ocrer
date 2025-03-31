@@ -11,12 +11,23 @@
 # ///
 
 import os
+import sys
 import time
+import re
 import pytesseract
 import argparse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
+
+def eprint(*args, **kwargs):
+  print(*args, file=sys.stderr, **kwargs)
+
+debug = False #True
+
+def dprint(*args, **kwargs):
+  if debug:
+    eprint(*args, **kwargs)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="OCR file renamer")
@@ -41,8 +52,20 @@ class OCRRenameHandler(FileSystemEventHandler):
                 print(f"No text found in {file_path}, skipping rename.")
                 return
             
-            safe_text = "_".join(extracted_text.split()[:5])  # Use first 5 words for filename #TODO: use the actual good fixes and guidelines I have.
-            new_file_path = os.path.join(os.path.dirname(file_path), f"{safe_text}.png")
+            dprint("raw:", extracted_text)
+            extracted_text = re.sub(r"\|", "I", extracted_text) #for some reason it often gets these wrong
+            extracted_text = extracted_text.lower()
+            dprint("lowered:", extracted_text)
+            extracted_text = re.sub(r"[^\w\s]", "", extracted_text)
+            dprint("sub out non-word:", extracted_text)
+            extracted_text = re.sub(r"\s+", " ", extracted_text).strip()
+            dprint("sub out spaces:", extracted_text)
+            if not extracted_text:
+                print(f"No recognizable text found in {file_path} after filtering, skipping rename.")
+                return
+            ext = os.path.splitext(file_path)[1] #this is "split ext(ention)", not "split text", btw.
+            extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there.
+            new_file_path = os.path.join(os.path.dirname(file_path), f"{extracted_text}.{ext}")
             
             os.rename(file_path, new_file_path)
             print(f"Renamed {file_path} -> {new_file_path}")
