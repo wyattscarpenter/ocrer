@@ -64,7 +64,7 @@ class OCRRenameHandler(FileSystemEventHandler):
                 print(f"No recognizable text found in {file_path} after filtering, skipping rename.")
                 return
             ext = os.path.splitext(file_path)[1] #this is "split ext(ention)", not "split text", btw.
-            extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there.
+            extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there. Anyway, you get weird "too long" errors on windows and this makes those happen less often.
             new_file_path = os.path.join(os.path.dirname(file_path), f"{extracted_text}{ext}")
             
             os.rename(file_path, new_file_path)
