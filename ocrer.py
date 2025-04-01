@@ -65,7 +65,7 @@ class OCRRenameHandler(FileSystemEventHandler):
                 return
             ext = os.path.splitext(file_path)[1] #this is "split ext(ention)", not "split text", btw.
             extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there.
-            new_file_path = os.path.join(os.path.dirname(file_path), f"{extracted_text}.{ext}")
+            new_file_path = os.path.join(os.path.dirname(file_path), f"{extracted_text}{ext}")
             
             os.rename(file_path, new_file_path)
             print(f"Renamed {file_path} -> {new_file_path}")
