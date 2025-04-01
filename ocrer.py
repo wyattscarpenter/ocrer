@@ -56,7 +56,7 @@ class OCRRenameHandler(FileSystemEventHandler):
             extracted_text = re.sub(r"\|", "I", extracted_text) #for some reason it often gets these wrong
             extracted_text = extracted_text.lower()
             dprint("lowered:", extracted_text)
-            extracted_text = re.sub(r"[^\w\s]", "", extracted_text)
+            extracted_text = re.sub(r"[^\w\s-]", "", extracted_text)
             dprint("sub out non-word:", extracted_text)
             extracted_text = re.sub(r"\s+", " ", extracted_text).strip()
             dprint("sub out spaces:", extracted_text)
