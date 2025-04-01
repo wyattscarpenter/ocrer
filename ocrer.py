@@ -39,19 +39,20 @@ class OCRRenameHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
-        
+
         time.sleep(1)  # Give some time for the file to be fully written # It's crazy that this was the automatically-generated code lmao.
         self.process(event.src_path)
-    
+
     def process(self, file_path):
         try:
             image = Image.open(file_path)
             extracted_text = pytesseract.image_to_string(image).strip()
-            
+
             if not extracted_text:
                 print(f"No text found in {file_path}, skipping rename.")
                 return
-            
+
+            # This logic is largely taken from Wyatt S Carpenter's tessname.py, and the code could be shared using imports (but that seems like a hassle).
             dprint("raw:", extracted_text)
             extracted_text = re.sub(r"\|", "I", extracted_text) #for some reason it often gets these wrong
             extracted_text = extracted_text.lower()
@@ -66,7 +67,7 @@ class OCRRenameHandler(FileSystemEventHandler):
             ext = os.path.splitext(file_path)[1] #this is "split ext(ention)", not "split text", btw.
             extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there. Anyway, you get weird "too long" errors on windows and this makes those happen less often.
             new_file_path = os.path.join(os.path.dirname(file_path), f"{extracted_text}{ext}")
-            
+
             os.rename(file_path, new_file_path)
             print(f"Renamed {file_path} -> {new_file_path}")
         except Exception as e:
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(event_handler, WATCH_FOLDER, recursive=False)
     observer.start()
-    
+
     print(f"Watching folder: {WATCH_FOLDER}")
     try:
         while True:
