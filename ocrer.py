@@ -20,7 +20,6 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
 
-# TODO: when the bot wakes up, if there are things in the ocr-me folder, do them.
 # TODO: allow the idling bot to take input on the command line, and accept q for quit and e for open up the folder in the file browser.
 
 def eprint(*args, **kwargs):
@@ -98,6 +97,13 @@ if __name__ == "__main__":
     WATCH_FOLDER = args.watch_folder
 
     event_handler = OCRRenameHandler()
+    print(f"Processing any pre-existing files in {WATCH_FOLDER}...")
+    for filename in os.listdir(WATCH_FOLDER):
+        file_path = os.path.join(WATCH_FOLDER, filename)
+        if os.path.isfile(file_path):
+            event_handler.process(file_path)
+
+    # Set up the observer for new files
     observer = Observer()
     observer.schedule(event_handler, WATCH_FOLDER, recursive=False)
     observer.start()
