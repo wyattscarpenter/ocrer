@@ -84,7 +84,6 @@ class OCRRenameHandler(FileSystemEventHandler):
 
             os.rename(file_path, new_file_path)
             print(f"Successfully processed {file_path} -> {new_file_name}")
-            print(f"Moved to: {success_dir}")
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
 
