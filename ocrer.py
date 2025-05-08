@@ -20,6 +20,9 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
 
+# TODO: when the bot wakes up, if there are things in the ocr-me folder, do them.
+# TODO: allow the idling bot to take input on the command line, and accept q for quit and e for open up the folder in the file browser.
+
 def eprint(*args, **kwargs):
   print(*args, file=sys.stderr, **kwargs)
 
@@ -45,11 +48,20 @@ class OCRRenameHandler(FileSystemEventHandler):
 
     def process(self, file_path):
         try:
+            # Create necessary directories if they don't exist
+            base_dir = os.path.dirname(file_path)
+            success_dir = os.path.join(base_dir, "has-been-ocr'd")
+            failure_dir = os.path.join(base_dir, "ocr-failure")
+            
+            os.makedirs(success_dir, exist_ok=True)
+            os.makedirs(failure_dir, exist_ok=True)
+
             image = Image.open(file_path)
             extracted_text = pytesseract.image_to_string(image).strip()
 
             if not extracted_text:
-                print(f"No text found in {file_path}, skipping rename.")
+                print(f"No text found in {file_path}, moving to ocr-failure.")
+                os.rename(file_path, os.path.join(failure_dir, os.path.basename(file_path)))
                 return
 
             # This logic is largely taken from Wyatt S Carpenter's tessname.py, and the code could be shared using imports (but that seems like a hassle).
@@ -62,14 +74,18 @@ class OCRRenameHandler(FileSystemEventHandler):
             extracted_text = re.sub(r"\s+", " ", extracted_text).strip()
             dprint("sub out spaces:", extracted_text)
             if not extracted_text:
-                print(f"No recognizable text found in {file_path} after filtering, skipping rename.")
+                print(f"No recognizable text found in {file_path} after filtering, moving to ocr-failure.")
+                os.rename(file_path, os.path.join(failure_dir, os.path.basename(file_path)))
                 return
-            ext = os.path.splitext(file_path)[1] #this is "split ext(ention)", not "split text", btw.
+            
+            ext = os.path.splitext(file_path)[1] #this is "split ext(ension)", not "split text", btw.
             extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there. Anyway, you get weird "too long" errors on windows and this makes those happen less often.
-            new_file_path = os.path.join(os.path.dirname(file_path), f"{extracted_text}{ext}")
+            new_file_name = f"{extracted_text}{ext}"
+            new_file_path = os.path.join(success_dir, new_file_name)
 
             os.rename(file_path, new_file_path)
-            print(f"Renamed {file_path} -> {new_file_path}")
+            print(f"Successfully processed {file_path} -> {new_file_name}")
+            print(f"Moved to: {success_dir}")
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
 
