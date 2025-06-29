@@ -35,6 +35,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="OCR file renamer")
     parser.add_argument("--tesseract-path", type=str, help="Path to the Tesseract executable (defaults to just calling `tesseract` on your system, so if that's in your PATH you're probably fine.)")
     parser.add_argument("--watch-folder", type=str, default="ocr-me", help="Folder to watch for new images (default: 'ocr-me' in this folder)")
+    parser.add_argument("--truncate-name", action=argparse.BooleanOptionalAction, default=True, help="Truncate output filename to avoid OS errors (default: true)")
     return parser.parse_args()
 
 class OCRRenameHandler(FileSystemEventHandler):
@@ -78,7 +79,8 @@ class OCRRenameHandler(FileSystemEventHandler):
                 return
             
             ext = os.path.splitext(file_path)[1] #this is "split ext(ension)", not "split text", btw.
-            extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there. Anyway, you get weird "too long" errors on windows and this makes those happen less often.
+            if args.truncate_name:
+                extracted_text = extracted_text[0:255-len(ext)-1] #limit name to make operating system happy #the -1 is for good luck! or, possibly, the trailing nul that other systems (file explorer, perhaps) occasionally must slap on there. Anyway, you get weird "too long" errors on windows and this makes those happen less often.
             new_file_name = f"{extracted_text}{ext}"
             new_file_path = os.path.join(success_dir, new_file_name)
 
