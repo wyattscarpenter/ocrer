@@ -1,0 +1,1 @@
+This is a small program — some might even say a crappy program (as it's mostly about plugging one API into another, and I mostly got ChatGPT and copilot to write it for me) — that runs in a folder and ocrs files as you save them to the folder. Check out ocrer.py --help for various options.
