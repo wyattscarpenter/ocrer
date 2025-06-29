@@ -20,8 +20,6 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
 
-# TODO: allow the idling bot to take input on the command line, and accept q for quit and e for open up the folder in the file browser.
-
 def eprint(*args, **kwargs) -> None:
   print(*args, file=sys.stderr, **kwargs)
 
@@ -110,9 +108,31 @@ if __name__ == "__main__":
     observer.start()
 
     print(f"Watching folder: {WATCH_FOLDER}")
+    print("Type 'q' to quit, 'e' to open the folder in the file browser.")
     try:
         while True:
-            time.sleep(10)
+            # Wait for user input or timeout
+            print("[Press 'q' to quit, 'e' to open folder, or Enter to continue idling]")
+            if sys.platform.startswith('win'):
+                import msvcrt
+                start_time = time.time()
+                while True:
+                    if msvcrt.kbhit():
+                        ch = msvcrt.getwch()
+                        if ch.lower() == 'q':
+                            print("Quitting...")
+                            raise KeyboardInterrupt
+                        elif ch.lower() == 'e':
+                            print(f"Opening {WATCH_FOLDER} in file explorer...")
+                            os.startfile(WATCH_FOLDER)
+                        elif ch == '\r' or ch == '\n':
+                            break
+                    if time.time() - start_time > 10:
+                        break
+                    time.sleep(0.1)
+            else:
+                # Fallback for non-Windows: just idle
+                time.sleep(10)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
