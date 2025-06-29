@@ -22,30 +22,30 @@ from PIL import Image
 
 # TODO: allow the idling bot to take input on the command line, and accept q for quit and e for open up the folder in the file browser.
 
-def eprint(*args, **kwargs):
+def eprint(*args, **kwargs) -> None:
   print(*args, file=sys.stderr, **kwargs)
 
 debug = False #True
 
-def dprint(*args, **kwargs):
+def dprint(*args, **kwargs) -> None:
   if debug:
     eprint(*args, **kwargs)
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="OCR file renamer")
     parser.add_argument("--tesseract-path", type=str, help="Path to the Tesseract executable (defaults to just calling `tesseract` on your system, so if that's in your PATH you're probably fine.)")
     parser.add_argument("--watch-folder", type=str, default="ocr-me", help="Folder to watch for new images (default: 'ocr-me' in this folder)")
     return parser.parse_args()
 
 class OCRRenameHandler(FileSystemEventHandler):
-    def on_created(self, event):
+    def on_created(self, event) -> None:
         if event.is_directory:
             return
 
         time.sleep(1)  # Give some time for the file to be fully written # It's crazy that this was the automatically-generated code lmao.
         self.process(event.src_path)
 
-    def process(self, file_path):
+    def process(self, file_path) -> None:
         try:
             # Create necessary directories if they don't exist
             base_dir = os.path.dirname(file_path)
