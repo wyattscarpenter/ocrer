@@ -111,7 +111,6 @@ if __name__ == "__main__":
     print("Type 'q' to quit, 'e' to open the folder in the file browser.")
     try:
         while True:
-            # Wait for user input or timeout
             print("[Press 'q' to quit, 'e' to open folder, or Enter to continue idling]")
             if sys.platform.startswith('win'):
                 import msvcrt
@@ -131,8 +130,20 @@ if __name__ == "__main__":
                         break
                     time.sleep(0.1)
             else:
-                # Fallback for non-Windows: just idle
-                time.sleep(10)
+                import sys, select
+                print("[Press 'q' to quit, 'e' to open folder, or Enter to continue idling]")
+                print("(Waiting up to 10 seconds for input...)")
+                rlist, _, _ = select.select([sys.stdin], [], [], 10)
+                if rlist:
+                    user_input = sys.stdin.readline().strip().lower()
+                    if user_input == 'q':
+                        print("Quitting...")
+                        raise KeyboardInterrupt
+                    elif user_input == 'e':
+                        print(f"Opening {WATCH_FOLDER} in file browser...")
+                        import subprocess
+                        subprocess.Popen(['xdg-open', WATCH_FOLDER])
+                # else: just idle and continue
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
