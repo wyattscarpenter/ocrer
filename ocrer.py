@@ -19,6 +19,9 @@ import argparse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PIL import Image
+import select
+if sys.platform.startswith('win'):
+    import msvcrt
 
 def eprint(*args, **kwargs) -> None:
   print(*args, file=sys.stderr, **kwargs)
@@ -111,7 +114,6 @@ if __name__ == "__main__":
     print("Type 'q' to quit, 'e' to open the folder in the file browser.")
     try:
         while True:
-            print("[Press 'q' to quit, 'e' to open folder, or Enter to continue idling]")
             if sys.platform.startswith('win'):
                 import msvcrt
                 start_time = time.time()
@@ -120,7 +122,7 @@ if __name__ == "__main__":
                         ch = msvcrt.getwch()
                         if ch.lower() == 'q':
                             print("Quitting...")
-                            raise KeyboardInterrupt
+                            exit()
                         elif ch.lower() == 'e':
                             print(f"Opening {WATCH_FOLDER} in file explorer...")
                             os.startfile(WATCH_FOLDER)
@@ -130,20 +132,16 @@ if __name__ == "__main__":
                         break
                     time.sleep(0.1)
             else:
-                import sys, select
-                print("[Press 'q' to quit, 'e' to open folder, or Enter to continue idling]")
-                print("(Waiting up to 10 seconds for input...)")
                 rlist, _, _ = select.select([sys.stdin], [], [], 10)
                 if rlist:
                     user_input = sys.stdin.readline().strip().lower()
                     if user_input == 'q':
                         print("Quitting...")
-                        raise KeyboardInterrupt
+                        exit()
                     elif user_input == 'e':
                         print(f"Opening {WATCH_FOLDER} in file browser...")
                         import subprocess
                         subprocess.Popen(['xdg-open', WATCH_FOLDER])
-                # else: just idle and continue
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
