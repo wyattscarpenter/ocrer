@@ -12,6 +12,8 @@
 
 import os
 import sys
+import subprocess
+import datetime
 import time
 import re
 from typing import Literal
@@ -38,7 +40,24 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--tesseract-path", type=str, help="Path to the Tesseract executable (defaults to just calling `tesseract` on your system, so if that's in your PATH you're probably fine.)")
     parser.add_argument("--truncate-name", action=argparse.BooleanOptionalAction, default=True, help="Truncate output filename to avoid OS errors (default: true)")
     parser.add_argument("watch_folder", nargs="+", help="Folder(s) to watch for new images")
+    dev = parser.add_argument_group("developer functionality")
+    dev.add_argument("--update-readme", action="store_true", help="Update the readme file with the latest help output.")
     return parser.parse_args()
+
+def update_readme() -> Literal[-1] | Literal[0]:
+    p = os.path.join(os.path.dirname(__file__), "readme.txt")
+    with open("readme.txt", "r", encoding="utf-8") as f:
+        text = f.read()
+    help_marker = r"As of \d+-\d+-\d+ it reads:"
+    splut = re.split(r"As of \d+-\d+-\d+ it reads:", text)
+    if len(splut) == 1:
+        print(f"The help marker I expected, {help_marker}, was not found in readme.txt", file=sys.stderr)
+        return -1
+    d = datetime.date.today().isoformat()
+    h = subprocess.run([sys.executable, os.path.abspath(__file__), "--help"], capture_output=True, text=True).stdout.strip()
+    with open(p, "wb") as f:
+        f.write((splut[0] + f"As of {d} it reads:\n\n{h}\n").encode())
+    return 0
 
 class OCRRenameHandler(FileSystemEventHandler):
     def on_created(self, event) -> None:
@@ -94,13 +113,16 @@ class OCRRenameHandler(FileSystemEventHandler):
 def main() -> None | Literal[-1]:
     global args
     args = parse_arguments()
+    if args.update_readme:
+        if err := update_readme():
+            return err
 
     if args.tesseract_path:
         pytesseract.pytesseract.tesseract_cmd = args.tesseract_path
 
     event_handler = OCRRenameHandler()
     observers = []
-    for WATCH_FOLDER in args.watch_folders:
+    for WATCH_FOLDER in args.watch_folder:
         print(f"Processing any pre-existing files in {WATCH_FOLDER}...")
         if not os.path.exists(WATCH_FOLDER):
             print(f"Error: path does not exist: {WATCH_FOLDER}", sys.stderr)
@@ -116,7 +138,7 @@ def main() -> None | Literal[-1]:
         observer.start()
         observers.append((observer, WATCH_FOLDER))
 
-    print(f"Watching folder(s): {', '.join(args.watch_folders)}")
+    print(f"Watching folder(s): {', '.join(args.watch_folder)}")
     print("Type 'q' to quit, 'e' to open the folder(s) in the file browser.")
     try:
         while True:
