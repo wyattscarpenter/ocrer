@@ -22,7 +22,7 @@ from watchdog.events import FileSystemEventHandler
 from PIL import Image
 import select
 if sys.platform.startswith('win'):
-    import msvcrt
+    import msvcrt # noqa: F401
 
 def eprint(*args, **kwargs) -> None:
   print(*args, file=sys.stderr, **kwargs)
@@ -92,6 +92,7 @@ class OCRRenameHandler(FileSystemEventHandler):
             print(f"Error processing {file_path}: {e}")
 
 def main() -> None | Literal[-1]:
+    global args
     args = parse_arguments()
 
     if args.tesseract_path:
