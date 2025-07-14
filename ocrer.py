@@ -14,6 +14,7 @@ import os
 import sys
 import time
 import re
+from typing import Literal
 import pytesseract
 import argparse
 from watchdog.observers import Observer
@@ -35,8 +36,8 @@ def dprint(*args, **kwargs) -> None:
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="OCR file renamer")
     parser.add_argument("--tesseract-path", type=str, help="Path to the Tesseract executable (defaults to just calling `tesseract` on your system, so if that's in your PATH you're probably fine.)")
-    parser.add_argument("--watch-folder", type=str, default="ocr-me", help="Folder to watch for new images (default: 'ocr-me' in this folder)")
     parser.add_argument("--truncate-name", action=argparse.BooleanOptionalAction, default=True, help="Truncate output filename to avoid OS errors (default: true)")
+    parser.add_argument("watch_folder", nargs="+", help="Folder(s) to watch for new images")
     return parser.parse_args()
 
 class OCRRenameHandler(FileSystemEventHandler):
@@ -90,28 +91,32 @@ class OCRRenameHandler(FileSystemEventHandler):
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
 
-if __name__ == "__main__":
+def main() -> None | Literal[-1]:
     args = parse_arguments()
 
     if args.tesseract_path:
         pytesseract.pytesseract.tesseract_cmd = args.tesseract_path
 
-    WATCH_FOLDER = args.watch_folder
-
     event_handler = OCRRenameHandler()
-    print(f"Processing any pre-existing files in {WATCH_FOLDER}...")
-    for filename in os.listdir(WATCH_FOLDER):
-        file_path = os.path.join(WATCH_FOLDER, filename)
-        if os.path.isfile(file_path):
-            event_handler.process(file_path)
+    observers = []
+    for WATCH_FOLDER in args.watch_folders:
+        print(f"Processing any pre-existing files in {WATCH_FOLDER}...")
+        if not os.path.exists(WATCH_FOLDER):
+            print(f"Error: path does not exist: {WATCH_FOLDER}", sys.stderr)
+            return -1 
+        for filename in os.listdir(WATCH_FOLDER):
+            file_path = os.path.join(WATCH_FOLDER, filename)
+            if os.path.isfile(file_path):
+                event_handler.process(file_path)
 
-    # Set up the observer for new files
-    observer = Observer()
-    observer.schedule(event_handler, WATCH_FOLDER, recursive=False)
-    observer.start()
+        # Set up the observer for new files
+        observer = Observer()
+        observer.schedule(event_handler, WATCH_FOLDER, recursive=False)
+        observer.start()
+        observers.append((observer, WATCH_FOLDER))
 
-    print(f"Watching folder: {WATCH_FOLDER}")
-    print("Type 'q' to quit, 'e' to open the folder in the file browser.")
+    print(f"Watching folder(s): {', '.join(args.watch_folders)}")
+    print("Type 'q' to quit, 'e' to open the folder(s) in the file browser.")
     try:
         while True:
             if sys.platform.startswith('win'):
@@ -124,8 +129,9 @@ if __name__ == "__main__":
                             print("Quitting...")
                             exit()
                         elif ch.lower() == 'e':
-                            print(f"Opening {WATCH_FOLDER} in file explorer...")
-                            os.startfile(WATCH_FOLDER)
+                            for _, folder in observers:
+                                print(f"Opening {folder} in file explorer...")
+                                os.startfile(folder)
                         elif ch == '\r' or ch == '\n':
                             break
                     if time.time() - start_time > 10:
@@ -139,9 +145,15 @@ if __name__ == "__main__":
                         print("Quitting...")
                         exit()
                     elif user_input == 'e':
-                        print(f"Opening {WATCH_FOLDER} in file browser...")
-                        import subprocess
-                        subprocess.Popen(['xdg-open', WATCH_FOLDER])
+                        for _, folder in observers:
+                            print(f"Opening {folder} in file browser...")
+                            import subprocess
+                            subprocess.Popen(['xdg-open', folder])
     except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+        for observer, _ in observers:
+            observer.stop()
+    for observer, _ in observers:
+        observer.join()
+
+if __name__ == "__main__":
+    exit(main())
